@@ -38,10 +38,7 @@ def getLogger(verbose=False, filename=None):
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     logger = logging.getLogger('jager')
     # set logging level
-    if verbose:
-        level = logging.DEBUG
-    else:
-        level = logging.INFO
+    level = logging.DEBUG if verbose else logging.INFO
     logger.setLevel(level)
     if filename:
         # Setup logging to file
@@ -101,11 +98,11 @@ def extract_hashes(t):
     sha512s = list(set(re.findall(util.re_sha512, t)))
     ssdeeps = list(set(re.findall(util.re_ssdeep, t)))
 
-    logger.debug(" - %s MD5s detected." % len(md5s))
-    logger.debug(" - %s SHA1s detected." % len(sha1s))
-    logger.debug(" - %s SHA256s detected." % len(sha256s))
-    logger.debug(" - %s SHA512s detected." % len(sha512s))
-    logger.debug(" - %s ssdeeps detected." % len(ssdeeps))
+    logger.debug(f" - {len(md5s)} MD5s detected.")
+    logger.debug(f" - {len(sha1s)} SHA1s detected.")
+    logger.debug(f" - {len(sha256s)} SHA256s detected.")
+    logger.debug(f" - {len(sha512s)} SHA512s detected.")
+    logger.debug(f" - {len(ssdeeps)} ssdeeps detected.")
 
     return {"md5s": md5s, "sha1s": sha1s, "sha256": sha256s, "sha512": sha512s, "ssdeep": ssdeeps}
 
@@ -113,9 +110,7 @@ def extract_hashes(t):
 def extract_emails(t):
     logger.debug("+ Extracting: Email Addresses")
 
-    emails = list(set(re.findall(util.re_email, t)))
-    emails.sort()
-
+    emails = sorted(set(re.findall(util.re_email, t)))
     logger.debug(" - %d email addresses detected." % (len(emails)))
 
     return emails
@@ -165,9 +160,7 @@ def extract_domains(t):
         if re.search(util.re_fqdn, line):
             domains.append(hit.group().lower())
 
-    domains = list(set(domains))
-    domains.sort()
-
+    domains = sorted(set(domains))
     logger.debug(" - %d domains detected." % len(domains))
 
     return domains
@@ -193,12 +186,12 @@ def extract_filenames(t):
     global logger
     logger.debug("+ Extracting: File Names")
 
-    docs = list(set(["".join(doc) for doc in re.findall(util.re_doc, t)]))
-    exes = list(set(["".join(item) for item in re.findall(util.re_exe, t)]))
-    webs = list(set(["".join(item) for item in re.findall(util.re_web, t)]))
-    zips = list(set(["".join(item) for item in re.findall(util.re_zip, t)]))
-    imgs = list(set(["".join(item) for item in re.findall(util.re_img, t)]))
-    flashes = list(set(["".join(item) for item in re.findall(util.re_flash, t)]))
+    docs = list({"".join(doc) for doc in re.findall(util.re_doc, t)})
+    exes = list({"".join(item) for item in re.findall(util.re_exe, t)})
+    webs = list({"".join(item) for item in re.findall(util.re_web, t)})
+    zips = list({"".join(item) for item in re.findall(util.re_zip, t)})
+    imgs = list({"".join(item) for item in re.findall(util.re_img, t)})
+    flashes = list({"".join(item) for item in re.findall(util.re_flash, t)})
 
     docs.sort()
     exes.sort()
@@ -207,12 +200,12 @@ def extract_filenames(t):
     imgs.sort()
     flashes.sort()
 
-    logger.debug(" - %s Docs detected." % len(docs))
-    logger.debug(" - %s Executable files detected." % len(exes))
-    logger.debug(" - %s Web files detected." % len(webs))
-    logger.debug(" - %s Zip files detected." % len(zips))
-    logger.debug(" - %s Image files detected." % len(imgs))
-    logger.debug(" - %s Flash files detected." % len(flashes))
+    logger.debug(f" - {len(docs)} Docs detected.")
+    logger.debug(f" - {len(exes)} Executable files detected.")
+    logger.debug(f" - {len(webs)} Web files detected.")
+    logger.debug(f" - {len(zips)} Zip files detected.")
+    logger.debug(f" - {len(imgs)} Image files detected.")
+    logger.debug(f" - {len(flashes)} Flash files detected.")
 
     return {"documents": docs, "executables": exes, "compressed": zips, "flash": flashes, "web": webs}
 
@@ -220,22 +213,18 @@ def extract_filenames(t):
 # Output Generators
 def generate_json(text, metadata, tlp='red'):
 
-    group_json = {
-        'group_name': [
-            '?'
-        ],
-        'attribution': [
-            '?'
-        ],
+    return {
+        'group_name': ['?'],
+        'attribution': ['?'],
         'indicators': {
             'ips': extract_ips(text),
             'urls': extract_urls(text),
             'domains': extract_domains(text),
-            'emails': extract_emails(text)
+            'emails': extract_emails(text),
         },
         'malware': {
             'filenames': extract_filenames(text),
-            'hashes': extract_hashes(text)
+            'hashes': extract_hashes(text),
         },
         'cves': extract_cves(text),
         'metadata': {
@@ -244,14 +233,10 @@ def generate_json(text, metadata, tlp='red'):
             'source': '??',
             'release_date': '??',
             'tlp': tlp,
-            'authors': [
-                '??'
-            ],
-            'file_metadata': metadata
-        }
+            'authors': ['??'],
+            'file_metadata': metadata,
+        },
     }
-
-    return group_json
 
 
 def get_time():
@@ -281,10 +266,10 @@ def processFile(filepath):
     global CONFIG_OUT_PATH
     global logger
     try:
-        logger.debug("- Analyzing File: %s" % (filepath))
+        logger.debug(f"- Analyzing File: {filepath}")
 
         if CONFIG_OUT_FILE and CONFIG_OUT_PATH:
-            out_filename = "%s/%s" % (CONFIG_OUT_PATH, CONFIG_OUT_FILE)
+            out_filename = f"{CONFIG_OUT_PATH}/{CONFIG_OUT_FILE}"
         else:
             out_filename = None
             # out_filename = "%s/%s_%s.json" % (CONFIG_OUT_PATH, os.path.basename(filepath), get_time())
@@ -295,7 +280,7 @@ def processFile(filepath):
         metadata = file_metadata(filepath)
         processText(text, metadata, out_filename)
         if out_filename:
-            logger.debug('- Wrote output to %s' % (out_filename))
+            logger.debug(f'- Wrote output to {out_filename}')
         return True
     except IOError as e:
         current_ts = time.strftime("%Y-%m-%d %H:%M")
@@ -313,7 +298,7 @@ def processURL(url):
         logger.warning('Error: Unsupported scheme')
         return False
     try:
-        logger.debug("- Analyzing URL: %s" % (url))
+        logger.debug(f"- Analyzing URL: {url}")
         # Many sites will respond with a 4xx if the UA is wget/urllib/etc
         headers = {'User-Agent': 'Mozilla/5.0 (Windows; U; MSIE 7.0; Windows NT 6.0; en-US)'}
         # disable cert checking (many sites dont have valid certs + speedup )
@@ -329,24 +314,24 @@ def processURL(url):
             else:
                 text = r.text
             if CONFIG_OUT_PATH:
-                out_filename = "%s/%s_%s.json" % (CONFIG_OUT_PATH, urlObj.netloc, get_time())
+                out_filename = f"{CONFIG_OUT_PATH}/{urlObj.netloc}_{get_time()}.json"
             else:
                 out_filename = None
             metadata = {'url': url}
             processText(text, metadata, out_filename)
             if out_filename:
-                logger.debug('- Wrote output to %s' % (out_filename))
+                logger.debug(f'- Wrote output to {out_filename}')
             return True
         else:
-            logger.debug('HTTP response : %s' % (r.status_code))
+            logger.debug(f'HTTP response : {r.status_code}')
 
     except Exception as e:
-        logger.debug('Error processing URL %s : %s' % (url, e))
+        logger.debug(f'Error processing URL {url} : {e}')
     return False
 
 
 def title():
-    ascii_art = """
+    return """
    __
    \ \  __ _  __ _  ___ _ __
     \ \/ _` |/ _` |/ _ \ '__|
@@ -355,7 +340,6 @@ def title():
              |___/
 
 """
-    return ascii_art
 
 
 # Interface
@@ -413,47 +397,54 @@ def main():
     # Start processing command line args
     if args.in_pdf:
         if not os.path.exists(os.path.abspath(args.in_pdf)):
-            logger.debug('error: input PDF %s does not exist!' % args.in_pdf)
+            logger.debug(f'error: input PDF {args.in_pdf} does not exist!')
             exit(1)
         processFile(args.in_pdf)
 
     elif args.in_url:
-        logger.debug("You are trying to analyze: %s and output to %s" % (args.in_url, args.out_path))
+        logger.debug(
+            f"You are trying to analyze: {args.in_url} and output to {args.out_path}"
+        )
+
         processURL(args.in_url)
 
     elif args.in_directory:
         # Input directory, expand directory and output to json
-        logger.debug("You are trying to analyze all the PDFs in %s and output to %s" % (args.in_directory, args.out_path))
+        logger.debug(
+            f"You are trying to analyze all the PDFs in {args.in_directory} and output to {args.out_path}"
+        )
+
 
         # An invalid dir or non-existent dir will crash the app
         if os.path.exists(args.in_directory):
             if not os.path.isdir(args.in_directory):
-                logger.debug("error: input %s is not a valid directory" % args.in_directory)
+                logger.debug(f"error: input {args.in_directory} is not a valid directory")
                 exit(1)
         else:
-            logger.debug("error: input directory %s does not exist" % args.in_directory)
+            logger.debug(f"error: input directory {args.in_directory} does not exist")
             exit(1)
 
         # Save to a directory, and not a single file
         pool = Pool(processes=cpu_count())
-        files = glob.glob('%s/*.pdf' % args.in_directory)
+        files = glob.glob(f'{args.in_directory}/*.pdf')
         pool.map(processFile, files)
         pool.close()
         pool.join()
 
     elif args.in_text:
         # Input of a textfile and output to json
-        logger.debug("You are trying to analyze %s and output to %s" % (args.in_text, args.out_path))
+        logger.debug(
+            f"You are trying to analyze {args.in_text} and output to {args.out_path}"
+        )
+
         processFile(args.in_text)
 
+    elif input_str := sys.stdin.read():
+        # logger.debug("You are trying to analyze %s and output to %s" % (args.in_text, args.out_path))
+        processText(input_str, metadata = {'source': 'unknown'})
     else:
-        input_str = sys.stdin.read()
-        if input_str:
-            # logger.debug("You are trying to analyze %s and output to %s" % (args.in_text, args.out_path))
-            processText(input_str, metadata = {'source': 'unknown'})
-        else:
-            logger.debug("That set of options won't get you what you need.\n")
-            parser.print_help()
+        logger.debug("That set of options won't get you what you need.\n")
+        parser.print_help()
 
     return True
 
